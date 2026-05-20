@@ -1,0 +1,5 @@
+name: ppq
+kind: model-provider
+version: 0.1.0
+description: PayPerQ — OpenAI-compatible inference API
+author: PayPerQ

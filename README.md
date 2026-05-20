@@ -1,6 +1,6 @@
 # ppq-hermes-provider
 
-Hermes model provider plugin for [PayPerQ](https://payperq.ai).
+Hermes model provider plugin for [PayPerQ](https://ppq.ai).
 
 ## Setup
 
