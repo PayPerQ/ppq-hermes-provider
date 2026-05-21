@@ -53,44 +53,34 @@ ppq = PPQProfile(
     aliases=("payperq", "ppq-inference"),
     display_name="PayPerQ",
     description="PayPerQ — OpenAI-compatible inference API",
-    signup_url="https://payperq.ai",
+    signup_url="https://ppq.ai",
     env_vars=("PPQ_API_KEY", "PPQ_BASE_URL"),
     base_url="https://api.ppq.ai/v1",
     auth_type="api_key",
     api_mode="chat_completions",
-    default_aux_model="openai/gpt-4o-mini",
+    default_aux_model="openai/gpt-5.4-mini",
     default_headers={"User-Agent": "ppq-hermes-plugin/0.1.0"},
     fallback_models=(
-        # OpenAI
-        "gpt-4o",
-        "gpt-4o-mini",
-        "openai/gpt-4o-mini",
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
-        "gpt-4-turbo",
-        "gpt-4",
-        "gpt-3.5-turbo",
-        "o1",
-        "o1-mini",
-        "o1-preview",
-        "gpt-5",
-        "gpt-5-mini",
-        "gpt-5-nano",
-        # Anthropic
-        "anthropic/claude-3.7-sonnet",
-        "anthropic/claude-haiku-4.5",
-        "anthropic/claude-3-opus:beta",
-        "anthropic/claude-3-haiku:beta",
-        # Google
-        "google/gemini-flash-1.5",
-        # Meta
-        "meta-llama/llama-3.1-405b-instruct",
-        "meta-llama/llama-3-70b-instruct",
-        # Mistral
-        "mistralai/mixtral-8x7b-instruct",
-        # DeepSeek
+        # Popular — premium
+        "claude-sonnet-4.6",
+        "claude-opus-4.7",
+        "gpt-5.5",
+        "gpt-5.3-chat",
+        "gpt-5.3-codex",
+        "gpt-5.5-pro",
+        "grok-4.20",
+        "sonar-reasoning",
+        # Popular — budget
+        "claude-haiku-4.5",
+        "gpt-5.4-mini",
+        "gpt-5.4-nano",
+        "gemini-3-flash-preview",
+        # Affordable open / third-party
         "deepseek/deepseek-r1",
+        "deepseek/deepseek-chat-v3-0324",
+        "meta-llama/llama-3.3-70b-instruct",
+        "google/gemini-flash-1.5",
+        "mistralai/mistral-small-3.1-24b-instruct",
     ),
 )
 
