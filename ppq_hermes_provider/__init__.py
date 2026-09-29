@@ -26,26 +26,49 @@ class PPQProfile(ProviderProfile):
         self,
         *,
         api_key: str | None = None,
+        base_url: str | None = None,
         timeout: float = 8.0,
+        **kwargs: Any,
     ) -> list[str] | None:
-        import urllib.request
-        import json
+        """Return the live chat-model ids from PayPerQ's ``/models`` endpoint.
 
-        url = f"{self.base_url}/models"
-        req = urllib.request.Request(url)
+        Hermes' catalog probe calls this as
+        ``fetch_models(api_key=..., base_url=...)``
+        (``hermes_cli.models.probe_profile_catalog``), passing whatever base URL
+        the user configured, so ``base_url`` is honoured when given and the
+        profile default is used otherwise.
+
+        ``**kwargs`` keeps this override aligned with ``ProviderProfile`` as its
+        signature grows: a narrower override raises ``TypeError``, which callers
+        catch and treat as an empty catalog, silently collapsing the model
+        picker to ``fallback_models``.
+        """
+        import json
+        import urllib.request
+
+        root = (base_url or self.base_url or "").rstrip("/")
+        if not root:
+            return None
+
+        req = urllib.request.Request(f"{root}/models")
         if api_key:
             req.add_header("Authorization", f"Bearer {api_key}")
+        req.add_header("Accept", "application/json")
+        for header, value in self.default_headers.items():
+            req.add_header(header, value)
+
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read())
-            models = data.get("data", [])
-            return [
-                m["id"]
-                for m in models
-                if isinstance(m, dict) and m.get("type") == "chat"
-            ]
         except Exception:
             return None
+
+        models = data if isinstance(data, list) else data.get("data", [])
+        return [
+            m["id"]
+            for m in models
+            if isinstance(m, dict) and m.get("type") == "chat"
+        ]
 
 
 ppq = PPQProfile(

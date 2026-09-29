@@ -44,7 +44,7 @@ else:
         def build_api_kwargs_extras(self, *, reasoning_config=None, **_):
             return {}, {}
 
-        def fetch_models(self, *, api_key=None, timeout=8.0):
+        def fetch_models(self, *, api_key=None, base_url=None, timeout=8.0, **kwargs):
             return None
 
     _registry = {}
@@ -169,6 +169,77 @@ def test_fetch_models_returns_none_on_error():
     with patch("urllib.request.urlopen", side_effect=Exception("timeout")):
         result = ppq.fetch_models(api_key="test-key")
     assert result is None
+
+
+# ── 4b. fetch_models — Hermes call contract ─────────────────────────────────
+
+def _mock_response(payload):
+    """A urlopen-compatible context-manager stub returning ``payload`` as JSON."""
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = json.dumps(payload).encode()
+    mock_resp.__enter__ = lambda s: s
+    mock_resp.__exit__ = MagicMock(return_value=False)
+    return mock_resp
+
+
+@pytest.mark.unit
+def test_fetch_models_accepts_base_url_and_unknown_kwargs():
+    """Regression: Hermes probes the catalog as fetch_models(api_key=..., base_url=...).
+
+    A narrower override raises TypeError. Callers catch it and read the result as
+    an empty catalog, so the model picker silently falls back to
+    ``fallback_models`` — newer models become unselectable with no error surfaced
+    anywhere. Extra kwargs must also be tolerated for forward compatibility.
+    """
+    resp = _mock_response({"data": [{"id": "gpt-4o", "type": "chat"}]})
+    with patch("urllib.request.urlopen", return_value=resp) as mock_open:
+        models = ppq.fetch_models(
+            api_key="test-key", base_url=BASE_URL, some_future_kwarg=True
+        )
+
+    assert models == ["gpt-4o"]
+    assert mock_open.call_args[0][0].full_url == f"{BASE_URL}/models"
+
+
+@pytest.mark.unit
+def test_fetch_models_honours_caller_base_url():
+    """A user-configured base URL (proxy/self-hosted) must win, trailing slash and all."""
+    resp = _mock_response({"data": [{"id": "gpt-4o", "type": "chat"}]})
+    with patch("urllib.request.urlopen", return_value=resp) as mock_open:
+        ppq.fetch_models(api_key="test-key", base_url="https://proxy.example.com/v1/")
+
+    assert mock_open.call_args[0][0].full_url == "https://proxy.example.com/v1/models"
+
+
+@pytest.mark.unit
+def test_fetch_models_defaults_to_profile_base_url():
+    resp = _mock_response({"data": [{"id": "gpt-4o", "type": "chat"}]})
+    with patch("urllib.request.urlopen", return_value=resp) as mock_open:
+        ppq.fetch_models(api_key="test-key")
+
+    assert mock_open.call_args[0][0].full_url == f"{BASE_URL}/models"
+
+
+@pytest.mark.unit
+def test_fetch_models_tolerates_bare_list_payload():
+    resp = _mock_response(
+        [{"id": "gpt-4o", "type": "chat"}, {"id": "dall-e-3", "type": "image"}]
+    )
+    with patch("urllib.request.urlopen", return_value=resp):
+        models = ppq.fetch_models(api_key="test-key")
+
+    assert models == ["gpt-4o"]
+
+
+@pytest.mark.unit
+def test_fetch_models_returns_none_without_any_base_url():
+    empty = type(ppq)(
+        name="ppq-empty",
+        base_url="",
+        auth_type="api_key",
+        api_mode="chat_completions",
+    )
+    assert empty.fetch_models(api_key="test-key") is None
 
 
 # ── 5. Integration tests (require PPQ_API_KEY) ───────────────────────────────
